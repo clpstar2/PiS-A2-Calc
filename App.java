@@ -1,123 +1,15 @@
 import javafx.application.Application;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import java.lang.Math.*;
 
-interface UpnCalcRechner {
-     void push(Double item);
-     void pop();
-     Double top();
-     void add();
-     void sub();
-     void mul();
-     void div();
-     void inv();
-     boolean isEmpty();
-     int size();
- }
+import java.text.DecimalFormat;
+import java.util.Stack;
 
- class UpnCalc extends App implements UpnCalcRechner {
-        UpnCalc next;
-        Double value;
-        int layer = 0;
-
-        UpnCalc() {
-            this.next = null;
-            this.value = null;
-        }
-
-        UpnCalc(Double value, UpnCalc next) {
-            this.value = value;
-            this.next = next;
-        }
-
-        UpnCalc ini(){
-            return new UpnCalc();
-        }
-
-        public int size() {
-            if (next == null) return 0;
-            return 1 + next.size();
-        }
-
-        public boolean isEmpty() {
-            if (next == null) return true;
-            return false;
-        }
-
-        public void push(Double value) {
-            if(size() >= 4) throw new UnsupportedOperationException("Stack size limited to 4");
-            UpnCalc tmp = new UpnCalc(this.value, next);
-            this.value = value;
-            next = tmp;
-            layer++;
-        }
-
-        public void pop() {
-            if(isEmpty()) throw new UnsupportedOperationException("Stack underflow");
-            value = next.value;
-            next = next.next;
-            layer--;
-        }
-
-        public Double top() {
-            if(isEmpty()) return -1.0;
-            return value;
-        }
-
-
-        public void add(){
-            Double x = this.top();
-            this.pop();
-            Double y = this.top();
-            this.pop();
-            this.push(x+y);
-        }
-
-        public void sub(){
-            Double x = this.top();
-            this.pop();
-            Double y = this.top();
-            this.pop();
-            this.push(x-y);
-        }
-
-        public void mul(){
-            Double x = this.top();
-            this.pop();
-            Double y = this.top();
-            this.pop();
-            this.push(x*y);
-        }
-
-        public void div() {
-            Double x = this.top();
-            this.pop();
-            Double y = this.top();
-            this.pop();
-            this.push(x / y);
-        }
-
-        public void inv(){
-            this.value = value*(-1);
-        }
-
-        String show() {
-            if (next == null) return "]";
-            return value + " " + next.show();
-        }
-
-        public String toString() {
-            return "[" + show();
-        }
-}
 
 public class App extends Application {
 
@@ -125,27 +17,37 @@ public class App extends Application {
         launch(args);
     }
 
-    TextField inputArea = new TextField();
-    // BorderPane to organize the GUI
-    BorderPane root = new BorderPane();
-    // Pane containing the NumberPad + Functional Buttons
-    GridPane calcPane = new GridPane();
-    // Vertical Box containing the Stack-Layers
-    VBox LayerBox = new VBox();
-    // InputArea displaying current Input
-    TextField[] layerArray = new TextField[4];
-    // fill grid-pane containing the interactive elements of the calculator
-    // btns-array for saving the freshly created buttons
-    Button[] btns = new Button[18];
+    //DecimalFormat df = new DecimalFormat(".####");
+    private int layer = 0;
+    private String input = "";
+    private Stack<Double> stack = new Stack<>();
+
+    private VBox LayerBox = new VBox();
+    private TextField [] layerAr = new TextField[4];
+    private Label [] labelAr = new Label [4];
+    //private Label consoleL = new Label("console");
+    //private TextField console = new TextField();
+
+    private VBox IOBox = new VBox();
+    private TextField inputArea = new TextField();
+    private TextField outputArea = new TextField();
+    private Label inputLabel = new Label("Input");
+    private Label outputLabel = new Label("Output");
+
+    private BorderPane root = new BorderPane();
+    private GridPane calcPane = new GridPane();
+    private Button[] btns = new Button[20];
 
     public void start(Stage primaryStage) {
+
+        primaryStage.setTitle("Upn Calculator");
         String[] btnNames =
                 {
                         "1", "2", "3", "+",
                         "4", "5", "6", "-",
                         "7", "8", "9", "*",
-                        "CE", "0", ",", "/",
-                        "Enter", "C"
+                        "\u23CE", "0", ",", "/",
+                        "\u2423", "CE", "\u2190","INV"
                 };
         for (int i = 0; i < btnNames.length; i++) {
             Button btn = new Button(btnNames[i]);
@@ -155,88 +57,162 @@ public class App extends Application {
         }
 
 
-        btns[0].setOnAction((ev) -> Control.write("1"));
-        btns[1].setOnAction((ev) -> Control.write("2"));
-        btns[2].setOnAction((ev) -> Control.write("3"));
-        btns[3].setOnAction((ev) -> Control.stakk.add());
-        btns[4].setOnAction((ev) -> Control.write("4"));
-        btns[5].setOnAction((ev) -> Control.write("5"));
-        btns[6].setOnAction((ev) -> Control.write("6"));
-        btns[7].setOnAction((ev) -> Control.stakk.sub());
-        btns[8].setOnAction((ev) -> Control.write("7"));
-        btns[9].setOnAction((ev) -> Control.write("8"));
-        btns[10].setOnAction((ev) -> Control.write(" "));
-        btns[11].setOnAction((ev) -> Control.stakk.mul());
-        btns[12].setOnAction((ev) -> Control.write("CE"));
-        btns[13].setOnAction((ev) -> Control.write("0"));
-        btns[14].setOnAction((ev) -> Control.write(","));
-        btns[15].setOnAction((ev) -> Control.stakk.div());
-        btns[16].setOnAction((ev) -> Control.parseInput(Control.input));
-        btns[17].setOnAction((ev) -> Control.clear());
+        // Put everything together
 
-
-        // create 4 text-boxes and labels showcasing the currently saved stack elements
-
-        for (int i = 4; i > 0; i--) {
-            // labels assigning the displayed layer to a textfield
-            Label layerNumber = new Label("Layer" + i);
-            layerNumber.setStyle("-fx-font-size: 16, -fx-bold");
-            // Horizontal Box containing Layer Elements
-            HBox hLayerBox = new HBox();
-            TextField layerText = new TextField();
-            layerText.setDisable(true);
-            layerArray[i - 1] = layerText;
-            hLayerBox.getChildren().addAll(layerText, layerNumber);
-            LayerBox.getChildren().add(hLayerBox);
+        for (int i = 0; i < layerAr.length; i++) {
+            layerAr[i] = new TextField();
         }
 
+        for (int i = 3; i >= 0; i--) {
+            labelAr[i] = new Label("Layer" + (i+1));
+        }
 
-        // Put everything together
-        root.setTop(inputArea);
-        root.setBottom(LayerBox);
-        root.setRight(calcPane);
+        IOBox.getChildren().addAll(inputLabel, inputArea, outputLabel, outputArea);
+        IOBox.setSpacing(5.0);
 
-        primaryStage.setScene(new Scene(root, 400, 400));
+        LayerBox.getChildren().addAll(labelAr[3], layerAr[3], labelAr[2], layerAr[2], labelAr[1], layerAr[1], labelAr[0], layerAr[0]);
+        LayerBox.setSpacing(5.0);
+
+
+        root.setTop(IOBox);
+        root.setMargin(IOBox, new Insets(5,5,5,5));
+        root.setLeft(calcPane);
+        root.setMargin(calcPane, new Insets(5,5,5,5));
+        root.setRight(LayerBox);
+        root.setMargin(LayerBox, new Insets(5,5,5,5));
+
+        primaryStage.setScene(new Scene(root, 400, 370));
         primaryStage.show();
+
+        //TextButtons
+        btns[0].setOnAction((ev) -> write("1"));
+        btns[1].setOnAction((ev) -> write("2"));
+        btns[2].setOnAction((ev) -> write("3"));
+        btns[3].setOnAction((ev) -> write("+"));
+        btns[7].setOnAction((ev) -> write("-"));
+        btns[11].setOnAction((ev) ->write("*"));
+        btns[4].setOnAction((ev) -> write("4"));
+        btns[5].setOnAction((ev) -> write("5"));
+        btns[6].setOnAction((ev) -> write("6"));
+        btns[8].setOnAction((ev) -> write("7"));
+        btns[9].setOnAction((ev) -> write("8"));
+        btns[10].setOnAction((ev) -> write("9"));
+        btns[13].setOnAction((ev) -> write("0"));
+        btns[15].setOnAction((ev) -> write("/"));
+        btns[14].setOnAction((ev) -> write("."));
+        btns[16].setOnAction((ev) -> write(" "));
+        btns[19].setOnAction((ev) -> write("INV"));
+
+
+        //Action Buttons
+        btns[12].setOnAction((ev) -> parse());
+        btns[17].setOnAction((ev) -> clearAll());
+        btns[18].setOnAction((ev) -> backspace());
+
+    }
+
+    void clearAll(){
+        this.input = "";
+        this.stack = new Stack<Double>();
+        inputArea.setText("");
+        outputArea.setText("");
+        for(int i = 0; i < layerAr.length; i++){
+            layerAr[i].setText("");
+        }
+    }
+
+    void backspace(){
+        this.input = input.substring(0, input.length()-1);
+        inputArea.setText(this.input);
+    }
+
+    void write(String input) {
+        this.input += input;
+        inputArea.setText(this.input);
+    }
+
+    void parse() {
+        if(this.input.equals("")){
+            this.input = inputArea.getText();
+        }
+        System.out.println(this.input);
+        String [] tmp = this.input.split(" ");
+
+        try {
+            for (int i = 0; i < tmp.length; i++) {
+                if(tmp[i].equals("+")) add();
+                else if(tmp[i].equals("-")) sub();
+                else if(tmp[i].equals("/")) div();
+                else if(tmp[i].equals("*")) mul();
+                else if(tmp[i].equals("INV")) inv();
+                else {
+                    if(stack.size()>=4)throw new StackOverflowError("Clear Stack!");
+                    stack.push(Double.parseDouble(tmp[i]));
+                    layerAr[layer++].setText(""+stack.peek());
+                }
+            }
+        }
+        catch (NumberFormatException nfe) {
+            System.out.println("Bad Input at length = 2, Syntax: Double*SPACE*...Double");
+        }
+
+        this.input = "";
+        inputArea.setText("");
+    }
+
+    void inv(){
+        double x1 = stack.peek();
+        stack.pop();
+        stack.push(x1*(-1));
+        outputArea.setText(""+stack.peek());
+        layerAr[layer-1].setText(""+stack.peek());
+    }
+
+    void add(){
+        if(stack.size() < 2) throw new UnsupportedOperationException("Stack Underflow");
+        Double x1 = stack.peek();
+        stack.pop();
+        Double x2 = stack.peek();
+        stack.pop();
+        stack.push(x1+x2);
+        outputArea.setText(""+stack.peek());
+        layerAr[--layer].setText(" ");
+        layerAr[layer-1].setText(""+stack.peek());
+    }
+
+    void sub(){
+        if(stack.size() < 2) throw new UnsupportedOperationException("Stack Underflow");
+        Double x1 = stack.peek();
+        stack.pop();
+        Double x2 = stack.peek();
+        stack.pop();
+        stack.push(x1-x2);
+        outputArea.setText(""+stack.peek());
+        layerAr[--layer].setText(" ");
+        layerAr[layer-1].setText(""+stack.peek());
+    }
+
+    void mul(){
+        if(stack.size() < 2) throw new UnsupportedOperationException("Stack Underflow");
+        Double x1 = stack.peek();
+        stack.pop();
+        Double x2 = stack.peek();
+        stack.pop();
+        stack.push(x1*x2);
+        outputArea.setText(""+stack.peek());
+        layerAr[--layer].setText(" ");
+        layerAr[layer-1].setText(""+stack.peek());
+    }
+
+    void div(){
+        if(stack.size() < 2) throw new UnsupportedOperationException("Stack Underflow");
+        Double x1 = stack.peek();
+        stack.pop();
+        Double x2 = stack.peek();
+        stack.pop();
+        stack.push(x1/x2);
+        outputArea.setText(""+stack.peek());
+        layerAr[--layer].setText(" ");
+        layerAr[layer-1].setText(""+stack.peek());
     }
 }
-
-    class Control extends UpnCalc {
-
-    static String input = "";
-    UpnCalc stakk = new UpnCalc();
-
-        static void parseInput(String s) {
-            double d1;
-            double d2;
-            String[] parser = s.split(" ");
-            if (parser.length == 2) {
-                try {
-                    d1 = Double.parseDouble(parser[0]);
-                    d2 = Double.parseDouble(parser[1]);
-                    stakk.push(d1);
-                    stakk.push(d2);
-                } catch (NumberFormatException nfe) {
-                    System.out.println("Bad Input");
-                }
-            } else if (parser.length == 1) {
-                try {
-                    d1 = Double.parseDouble(parser[0]);
-                    stakk.push(d1);
-                } catch (NumberFormatException nfe) {
-                    System.out.println("Bad Input");
-                }
-            } else throw new IllegalArgumentException("Bad User Input, Syntax: Double [optional]Double ");
-        }
-
-        void clear() {
-            stakk = new UpnCalc();
-            stakk.layer = 0;
-            input = "";
-        }
-
-        static void write(String input) {
-            input += input;
-        }
-    }
-
