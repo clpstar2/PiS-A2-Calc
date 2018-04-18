@@ -1,0 +1,13 @@
+Bezugscode
+-----------------------------------------+
+left.setOnAction((event) -> {            |
+this.incrementCurrentLine();             |
+center.setText(Character.toString(k));}  |
+)                                        |
+-----------------------------------------+
+
+Die Methode setOnAction erwartet ein Objekt vom Typ EventHandler<ActionEvent>.
+Dadurch weiß der Compiler, dass es sich bei dem parameter "event" um ein Objekt vom Typ ActionEvent handeln muss. 
+EventHandler<ActionEvent> ist ein funktionales Interface mit genau einer abstraken Methode handle(T event)  
+Der Lambda Ausdruck hat nun die Aufgabe die konkrete implementierung für die handle(T event) Methode zu liefern. 
+In diesem Fall wird das übergebene ActionEvent Objekt garnicht benutzt. 
